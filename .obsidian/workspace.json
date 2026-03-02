@@ -14,7 +14,7 @@
               "type": "markdown",
               "state": {
                 "file": "README.md",
-                "mode": "source",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
@@ -183,7 +183,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "714b1d7d5ba920bb",
+  "active": "6372e62ea36c8440",
   "lastOpenFiles": [
     "DRAFT.md.md",
     "README.md",

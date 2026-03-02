@@ -1,25 +1,26 @@
 
-# Высоконагруженный чат с разбивкой на Гильдии 
+# Highload проект : высоконагруженный чат с разбивкой на Сервера/Гильдии 
   
-## Содержание
-
-- [Высоконагруженный чат с разбивкой на Гильдии](#высоконагруженный-чат-с-разбивкой-на-гильдии)
-	- [Содержание](#содержание)
-	- [Основная часть](#основная-часть)
-		- [1. Тема и целевая аудитория](#1-тема-и-целевая-аудитория)
-			- [Функционал MVP](#функционал-mvp)
-			- [Аналоги на рынке](#аналоги-на-рынке)
-			- [Глобальная аудитория Discord](#глобальная-аудитория-discord)
-			-  [Аудитория Discord в России](#аудитория-discord-в-россии)
-	- [Список источников](#список-источников)
-## Основная часть
-
-### 1. Тема и целевая аудитория:
+---
+# 1. Описание
+## 1.1 Тема и целевая аудитория:
 
 **Тип сервиса :**  B2C чат для больших сообществ.  
 **Ключевая модель:** server-based "Гильдия/Сервер -> Канал -> Роль/Разрешение  -> Событие". 
+**Реальные аналоги:**  
+- Discord (глобальная пользовательская база ~200M+ MAU \[[1](https://discord.com/company)\]).
+- Slack (глобальная пользовательская база ~6.4M MAU \[[2](https://slack.com/)\]).
+- Microsoft Teams - похожая структура "рабочее пространство ->  каналы", но B2B. (глобальная пользовательская база ~320M MAU \[[3](https://office365itpros.com/2023/10/26/teams-number-of-users-320-million/)\])  
+  
+**Целевая аудитория Discord**:   
+- **MAU(месячные активные пользователи)**: ~200,000,000+ / мес (глобально) \[[4](https://backlinko.com/discord-users)\].
+- **DAU(дневные активные пользователи)**: ~26,000,000+ / день (глобально) \[[5](https://www.demandsage.com/discord-statistics/)\].
+- Регионы: Северная/Южная Америка + Европа.
 
-#### Функционал MVP
+**Целевая аудитория Discord в России (на 2024)**:
+- **MAU**: ~40,000,000+ / мес человек \[[6](https://www.kommersant.ru/doc/7165779)\] - \[[7](https://worldpopulationreview.com/country-rankings/discord-users-by-country)\] 
+- **DAU**: ~4,000,000+ / день человек (10% от MAU, рассчитано по аналогии с Discord \[[1](https://discord.com/company)\])
+## 1.2 MVP  - 7 основных функций:
 
 1. **Регистрация/авторизация:** регистрация, вход, управление сессиями (JWT-токены и refresh-token).
 2. **Гильдии/Серверы:** создание сервера (гильдии) и вход по инвайту. Список серверов пользователя.
@@ -30,24 +31,9 @@
 7. **Роли/Модерация:** создание ролей, настройка прав, бан/мут модераторов, поиск по чатам.
 
 Каждая функция вдохновлена практиками Discord и Slack. 
-Например, Discord хранит триллионы сообщений [^8] и применяет роли/каналы с ACL.
-
-#### Аналоги на рынке: 
-
-- Discord (глобальная пользовательская база ~200M+ MAU \[[1](https://discord.com/company)\]).
-- Slack (глобальная пользовательская база ~6.4M MAU \[[2](https://slack.com/)\]).
-- Microsoft Teams - похожая структура "рабочее пространство ->  каналы", но B2B. (глобальная пользовательская база ~320M MAU \[[3](https://office365itpros.com/2023/10/26/teams-number-of-users-320-million/)\])  
-
-#### Глобальная аудитория Discord:   
-
-- **MAU(месячные активные пользователи)**: ~200,000,000+ / мес (глобально) \[[4](https://backlinko.com/discord-users)\].
-- **DAU(дневные активные пользователи)**: ~26,000,000+ / день (глобально) \[[5](https://www.demandsage.com/discord-statistics/)\].
-- Регионы: Северная/Южная Америка + Европа.
-
-#### Аудитория Discord в России:
-- **MAU**: ~40,000,000+ / мес человек \[[6](https://www.kommersant.ru/doc/7165779)\] - \[[7](https://worldpopulationreview.com/country-rankings/discord-users-by-country)\] 
-- **DAU**: ~4,000,000+ / день человек (10% от MAU, рассчитано по аналогии с Discord \[[1](https://discord.com/company)\])
+Например, Discord хранит триллионы сообщений \[[8](https://discord.com/blog/maxjourney-pushing-discords-limits-with-a-million-plus-online-users-in-a-single-server)\] и применяет роли/каналы с ACL.
   
+---  
 ---
 # 2. Расчёт нагрузки:
 ## 2.1 Продуктовые метрики:
@@ -238,7 +224,8 @@ SPB_BGP -. "при аварии: withdraw -> трафик уйдёт в ЦОД_1
 При падении одного ЦОД маршрутизаторы перенаправят запросы на другой автоматически (автоматический failover на IP-уровне\[[12](https://aws.amazon.com/global-accelerator/features/)\]
 
 ---
-## Список источников
+---
+# Источники:
 
 1. Discord Inc., _"About Discord"_ (корпоративная страница, 2025): https://discord.com/company
 2. Salesforce Inc., "Millions of people love to work in Slack" (корпоративная страница, 2026): https://slack.com/
@@ -247,8 +234,8 @@ SPB_BGP -. "при аварии: withdraw -> трафик уйдёт в ЦОД_1
 5. Demandsage. Discord Statistics 2026 (Users, Revenue & Market Share): https://www.demandsage.com/discord-statistics/
 6. Коммерсантъ. С Discord сыграли в частичную блокировку: https://www.kommersant.ru/doc/7165779
 7. World Population Review. Discord Users by Country 2026: https://worldpopulationreview.com/country-rankings/discord-users-by-country
-[^8] [Discord Inc., Maxjourney: Pushing Discord’s Limits with a Million+ Online Users in a Single Server](https://discord.com/blog/maxjourney-pushing-discords-limits-with-a-million-plus-online-users-in-a-single-server)
-8. Discord Inc., Discord benchmark of 30% communicators as a healthy goal: https://discord.com/community/understanding-server-insights
-9. Discord Inc. How Discord Indexes Trillions of Messages: https://discord.com/blog/how-discord-indexes-trillions-of-messages
-10. Discord Inc. How Discord Stores Trillions of Messages: https://discord.com/blog/how-discord-stores-trillions-of-messages
-11. Amazon Inc. AWS Global Accelerator features: https://aws.amazon.com/global-accelerator/features/
+8. Discord Inc., Maxjourney: Pushing Discord’s Limits with a Million+ Online Users in a Single Server: https://discord.com/blog/maxjourney-pushing-discords-limits-with-a-million-plus-online-users-in-a-single-server
+9. Discord Inc., Discord benchmark of 30% communicators as a healthy goal: https://discord.com/community/understanding-server-insights
+10. Discord Inc. How Discord Indexes Trillions of Messages: https://discord.com/blog/how-discord-indexes-trillions-of-messages
+11. Discord Inc. How Discord Stores Trillions of Messages: https://discord.com/blog/how-discord-stores-trillions-of-messages
+12. Amazon Inc. AWS Global Accelerator features: https://aws.amazon.com/global-accelerator/features/
