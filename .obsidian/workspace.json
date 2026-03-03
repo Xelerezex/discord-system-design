@@ -35,8 +35,7 @@
               "title": "README_old_1"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -198,13 +197,15 @@
       "bases:Create new base": false
     }
   },
-  "active": "dc8b9e0b1cf56607",
+  "active": "6372e62ea36c8440",
   "lastOpenFiles": [
+    "pictures/durovs-post-404.png",
     "README.md",
+    "pictures",
+    "archive/README_old_1.md",
     "archive/README_old_2.md",
     "archive/DRAFT_old_3.md",
     "archive",
-    "archive/README_old_1.md",
     "DRAFT.md.md",
     "task-1.md",
     "“Million+.md",
