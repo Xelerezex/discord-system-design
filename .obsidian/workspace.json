@@ -49,8 +49,7 @@
               "title": "database-calculation"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -212,11 +211,11 @@
       "bases:Create new base": false
     }
   },
-  "active": "89bf06b81dc9473b",
+  "active": "6372e62ea36c8440",
   "lastOpenFiles": [
+    "archive/database-info.md",
     "README.md",
     "archive/database-calculation.md",
-    "archive/database-info.md",
     "resources/database.sql.md",
     "pictures/logic-database.svg",
     "resources",
