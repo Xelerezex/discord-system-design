@@ -64,7 +64,7 @@
             }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -226,7 +226,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "89bf06b81dc9473b",
+  "active": "931a8ae276fe99c1",
   "lastOpenFiles": [
     "README.md",
     "archive/database-calculation.md",

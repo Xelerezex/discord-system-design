@@ -26,3 +26,7 @@
 |`update_buffer`|Буфер обновлений для доставки и синхронизации|`id`, `user_id`, `chat_id`, `message_id`, `update_type`, `payload`, `created_at`, `expires_at`|TTL-буфер|Используется для `getUpdates`/reconnect/sync|
 |`presence_cache`|Онлайн-статус и last seen|`user_id`, `device_id`, `status`, `last_seen_at`, `expires_at`|In-memory cache с TTL|Нужен для realtime-логики|
 |`event_log`|Журнал системных и пользовательских событий|`id`, `user_id`, `chat_id`, `message_id`, `event_type`, `payload`, `created_at`|Append-only событийное хранилище|Используется для аудита и аналитики|
+
+- **plaintext** — исходное обычное сообщение, которое можно прочитать 
+- **ciphertext** — результат шифрования, набор данных, который без ключа не читается
+- **QPS** — это **Queries Per Second**, то есть **количество запросов в секунду**.
