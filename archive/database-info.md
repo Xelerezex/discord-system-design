@@ -1,0 +1,14 @@
+
+---
+
+|**Таблица**|**Назначение**|**Что хранится**|**Где именно хранятся данные**|**Тип данных**|
+|---|---|---|---|---|
+|**users**|Профиль пользователя|`id`, `username`, `phone_number`, `display_name`, `avatar_file_id`, `bio`, `created_at`, `updated_at`|Основное транзакционное хранилище пользовательских данных|Постоянные|
+|**user_sessions**|Авторизация и активные сессии|`token`, `user_id`, `device_id`, `user_agent`, `ip_address`, `created_at`, `expires_at`|Быстрое session/key-value хранилище с TTL|Временные|
+|**chats**|Метаданные диалогов, групп и каналов|`id`, `type`, `title`, `owner_id`, `chat_photo_file_id`, `last_message_id`, `is_secret`, `created_at`, `updated_at`|Основное транзакционное хранилище чатовых метаданных|Постоянные|
+|**chat_members**|Участники чатов и их состояние|`chat_id`, `user_id`, `role`, `last_read_seq_no`, `unread_count`, `joined_at`, `updated_at`|Основное транзакционное хранилище, логически рядом с чатами|Постоянные|
+|**messages**|История сообщений|`id`, `chat_id`, `sender_id`, `seq_no`, `body`, `is_edited`, `is_encrypted`, `created_at`, `updated_at`|Основное транзакционное хранилище сообщений|Постоянные|
+|**update_buffer**|Буфер обновлений для доставки и синхронизации|`id`, `user_id`, `chat_id`, `message_id`, `update_type`, `payload`, `created_at`, `expires_at`|Буферное TTL-хранилище|Временные|
+|**presence_cache**|Онлайн-статус и last seen|`user_id`, `device_id`, `status`, `last_seen_at`, `expires_at`|In-memory cache с TTL|Временные|
+|**storage_files**|Метаданные файлов|`id`, `file_type`, `object_key`, `size_bytes`, `created_at`|Метаданные — в транзакционном хранилище; бинарные объекты — в объектном хранилище по `object_key`|Постоянные метаданные|
+|**event_log**|Журнал пользовательских и системных событий|`id`, `user_id`, `chat_id`, `message_id`, `event_type`, `payload`, `created_at`|Append-only событийное хранилище|Потоковые / аналитические|
