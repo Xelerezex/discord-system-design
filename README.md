@@ -661,7 +661,7 @@ flowchart TD
 ---
 ### 10. Схема проекта
 
-![[full-scheme.svg]]
+![Полная схема проекта](pictures/full-scheme.svg)
 
 ---
 
