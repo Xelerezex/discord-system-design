@@ -665,6 +665,61 @@ flowchart TD
 
 ---
 
+### 11. Список серверов
+#### 11.1 Требования к ресурсам
+| Сервис                      |                                                        Нагрузка |          CPU |         RAM |              Диск |             Сеть | Краткий расчёт                           |
+| --------------------------- | --------------------------------------------------------------: | -----------: | ----------: | ----------------: | ---------------: | ---------------------------------------- |
+| Edge / L7 / WS gateway      |                                 до `~1.96 млн` одновременных WS |     160 vCPU |      320 ГБ |        1.0 ТБ SSD |        10 Гбит/с | `17.2 млн × 41/1440 × 4 ≈ 1.96 млн`      |
+| Backend API                 | `SendMessages peak ~37,163 RPS` + `GetUpdates peak ~16,722 RPS` |     160 vCPU |      320 ГБ |        2.0 ТБ SSD |        10 Гбит/с | суммарный пиковый API-path `~53,885 RPS` |
+| Fan-out / Projector         |                           `user_updates peak ~226,944 events/s` |      48 vCPU |       96 ГБ |        0.5 ТБ SSD |         5 Гбит/с | fan-out на всех получателей              |
+| PostgreSQL                  |                        `users`, `user_sessions`, `secret_chats` |      24 vCPU |      192 ГБ |       6.0 ТБ NVMe |         3 Гбит/с | `1 primary + 2 standby`                  |
+| Citus coordinator           |                                      distributed SQL / metadata |      20 vCPU |      256 ГБ |      7.68 ТБ NVMe |         2 Гбит/с | `1 active + 1 standby`                   |
+| Citus workers               |                                     chat-centric + user-centric |     144 vCPU |     1728 ГБ |      36.0 ТБ NVMe |        10 Гбит/с | `9 workers = 3 AZ × 3 worker`            |
+| Redis presence              |                                   `online/offline`, `last_seen` |      30 vCPU |      384 ГБ | 11.52 ТБ SSD/NVMe |         3 Гбит/с | `1 primary + 2 replica`                  |
+| Monitoring / Logs / Tracing |                               Prometheus, Loki, Grafana, Jaeger |      24 vCPU |       48 ГБ |        0.6 ТБ SSD |         2 Гбит/с | отдельный observability pool             |
+| **Итого**                   |                                                               — | **610 vCPU** | **3344 ГБ** |      **65.30 ТБ** | **45–50 Гбит/с** | без учёта managed-ресурсов CPU/RAM у S3  |
+#### 11.2 Сервера
+| Сервис / пул             | Тип                | Конфигурация                                                       | Кол-во | Что размещается                                                                              | Стоимость 1 сервера / сервиса в месяц | Расчёт стоимости                 | Итоговая стоимость в месяц |
+| ------------------------ | ------------------ | ------------------------------------------------------------------ | -----: | -------------------------------------------------------------------------------------------- | ------------------------------------: | -------------------------------- | -------------------------: |
+| Kubernetes control plane | Managed Kubernetes | HA cluster / 3 master-ноды                                         |      1 | control plane                                                                                |                           15,228.00 ₽ | `1 × 15,228.00`                  |                15,228.00 ₽ |
+| Внешний L4-балансировщик | Managed LB         | Продвинутый с резервированием                                      |      1 | внешний VIP                                                                                  |                            3,944.59 ₽ | `1 × 3,944.59`                   |                 3,944.59 ₽ |
+| Edge node group          | Cloud VM           | `16 vCPU / 32 ГБ / 100 ГБ Fast SSD v2`                             |     10 | `ingress-nginx`, `ws-gateway`                                                                |                           20,670.88 ₽ | `16×668.35 + 32×243.04 + 100×22` |               206,708.80 ₽ |
+| Backend node group       | Cloud VM           | `16 vCPU / 32 ГБ / 200 ГБ Fast SSD v2`                             |     10 | `auth`, `api-message`, `updates-api`, `dialogs-api`, `fanout`, `pgbouncer`, `redis-sentinel` |                           22,870.88 ₽ | `16×668.35 + 32×243.04 + 200×22` |               228,708.80 ₽ |
+| Observability node group | Cloud VM           | `8 vCPU / 16 ГБ / 200 ГБ Fast SSD v2`                              |      3 | `prometheus`, `loki`, `grafana`, `jaeger`, `alertmanager`                                    |                           13,635.44 ₽ | `8×668.35 + 16×243.04 + 200×22`  |                40,906.32 ₽ |
+| etcd                     | Cloud VM           | `4 vCPU / 8 ГБ / 50 ГБ Fast SSD v2`                                |      3 | quorum для Patroni                                                                           |                            5,717.72 ₽ | `4×668.35 + 8×243.04 + 50×22`    |                17,153.16 ₽ |
+| PostgreSQL               | Bare Metal         | `EL51-NVMe-SAN: 8 cores / 64 ГБ / 2×2000 ГБ NVMe`                  |      3 | `1 primary + 2 standby`                                                                      |                           28,000.00 ₽ | `3 × 28,000.00`                  |                84,000.00 ₽ |
+| Citus coordinator        | Bare Metal         | `BL19-NVMe: 10 cores / 128 ГБ / 2×1920 ГБ NVMe`                    |      2 | `1 active + 1 standby`                                                                       |                           28,600.00 ₽ | `2 × 28,600.00`                  |                57,200.00 ₽ |
+| Citus workers            | Bare Metal         | `BL25-NVMe: 16 cores / 192 ГБ / 2×1920 ГБ NVMe + 1000 ГБ NVMe M.2` |      9 | chat-centric и user-centric shards                                                           |                           47,709.00 ₽ | `9 × 47,709.00`                  |               429,381.00 ₽ |
+| Redis                    | Bare Metal         | `BL19-NVMe: 10 cores / 128 ГБ / 2×1920 ГБ NVMe`                    |      3 | `1 primary + 2 replica`                                                                      |                           28,600.00 ₽ | `3 × 28,600.00`                  |                85,800.00 ₽ |
+| **Итого**                | —                  | —                                                                  | **42** | —                                                                                            |                                     — | —                                |         **1,169,030.67 ₽** |
+
+#### 11.3 Kubernetes / контейнеры 
+
+|Сервис|Поды|CPU req / lim|RAM req / lim|Размещение|
+|---|--:|--:|--:|---|
+|`ingress-nginx`|6|`2 / 4`|`2 / 4 ГБ`|edge pool|
+|`ws-gateway`|40|`1.5 / 3`|`3 / 6 ГБ`|edge pool|
+|`auth-service`|12|`1 / 2`|`1 / 2 ГБ`|backend pool|
+|`api-message-service`|20|`2 / 4`|`4 / 8 ГБ`|backend pool|
+|`updates-api`|8|`1 / 2`|`2 / 4 ГБ`|backend pool|
+|`dialogs-api`|6|`1 / 2`|`2 / 4 ГБ`|backend pool|
+|`fanout-projector`|12|`2 / 4`|`4 / 8 ГБ`|backend pool|
+|`pgbouncer`|3|`0.5 / 1`|`0.5 / 1 ГБ`|backend pool|
+|`redis-sentinel`|3|`0.25 / 0.5`|`0.25 / 0.5 ГБ`|backend pool|
+|`prometheus`|2|`2 / 4`|`8 / 12 ГБ`|observability pool|
+|`alertmanager`|2|`0.5 / 1`|`1 / 2 ГБ`|observability pool|
+|`grafana`|2|`0.5 / 1`|`1 / 2 ГБ`|observability pool|
+|`loki`|2|`2 / 4`|`4 / 8 ГБ`|observability pool|
+|`jaeger`|2|`1 / 2`|`2 / 4 ГБ`|observability pool|
+|**Итого**|**118**|**175.25 / 352.5 vCPU**|**334.25 / 660.5 ГБ**|—|
+#### 11.4 Суммарная аллокация по пулам Kubernetes 
+|Пул|Ноды|Ресурсы пула|Сумма requests|Сумма limits|Запас по requests|
+|---|--:|---|---|---|---|
+|Edge pool|10|`160 vCPU / 320 ГБ RAM`|`72 vCPU / 132 ГБ`|`144 vCPU / 264 ГБ`|`88 vCPU / 188 ГБ`|
+|Backend pool|10|`160 vCPU / 320 ГБ RAM`|`92.25 vCPU / 170.25 ГБ`|`184.5 vCPU / 340.5 ГБ`|`67.75 vCPU / 149.75 ГБ`|
+|Observability pool|3|`24 vCPU / 48 ГБ RAM`|`12 vCPU / 32 ГБ`|`24 vCPU / 48 ГБ`|`12 vCPU / 16 ГБ`|
+|**Итого**|**23**|**344 vCPU / 688 ГБ RAM**|**176.25 vCPU / 334.25 ГБ**|**352.5 vCPU / 652.5 ГБ**|**167.75 vCPU / 353.75 ГБ**|
+
 ## Список источников
 
 [^1]: [Telegram Users Statistics 2026 (Latest Global Data)](https://www.demandsage.com/telegram-statistics/)
