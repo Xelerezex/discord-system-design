@@ -20,6 +20,18 @@
               "icon": "lucide-file",
               "title": "README"
             }
+          },
+          {
+            "id": "24658c632ae6123e",
+            "type": "leaf",
+            "state": {
+              "type": "image",
+              "state": {
+                "file": "pictures/full-scheme.svg"
+              },
+              "icon": "lucide-image",
+              "title": "full-scheme"
+            }
           }
         ]
       }
@@ -183,10 +195,12 @@
       "bases:Create new base": false
     }
   },
-  "active": "6372e62ea36c8440",
+  "active": "714b1d7d5ba920bb",
   "lastOpenFiles": [
-    "Untitled.md",
+    "pictures/full-scheme (Copy).svg",
+    "pictures/full-scheme.svg",
     "README.md",
+    "Untitled.md",
     "archive/database-calculation.md",
     "archive/physical-database-info.md",
     "pictures/physical-database.svg",
@@ -200,7 +214,6 @@
     "pictures/highload-physical-sceme.svg",
     "pictures/logic-database.svg",
     "pictures/highload-logic-scheme.svg",
-    "pictures/logic-database-prev.svg",
     "resources",
     "pictures",
     "archive/README_old_1.md",
