@@ -67,10 +67,9 @@
 			- [Полная схема](#полная-схема)
 			- [Описание схемы проекта](#описание-схемы-проекта)
 		- [11. Список серверов](#11-список-серверов)
-			- [Требования к ресурсам](#требования-к-ресурсам)
-			- [Сервера](#сервера)
-			- [Kubernetes / контейнеры](#kubernetes-контейнеры)
-			- [Суммарная аллокация по пулам Kubernetes](#суммарная-аллокация-по-пулам-kubernetes)
+			- [Начальные нормативы для расчёта ресурсов](#начальные-нормативы-для-расчёта-ресурсов)
+			- [Расчёт ресурсов по сервисам](#расчёт-ресурсов-по-сервисам)
+			- [Итоговая таблица серверов](#итоговая-таблица-серверов)
 	- [Список источников](#список-источников)
 ---
 ## Основная часть
@@ -683,59 +682,53 @@ flowchart TD
 ---
 
 ### 11. Список серверов
-#### Требования к ресурсам
-| Сервис                      |                                                        Нагрузка |          CPU |         RAM |              Диск |             Сеть | Краткий расчёт                           |
-| --------------------------- | --------------------------------------------------------------: | -----------: | ----------: | ----------------: | ---------------: | ---------------------------------------- |
-| Edge / L7 / WS gateway      |                                 до `~1.96 млн` одновременных WS |     160 vCPU |      320 ГБ |        1.0 ТБ SSD |        10 Гбит/с | `17.2 млн × 41/1440 × 4 ≈ 1.96 млн`      |
-| Backend API                 | `SendMessages peak ~37,163 RPS` + `GetUpdates peak ~16,722 RPS` |     160 vCPU |      320 ГБ |        2.0 ТБ SSD |        10 Гбит/с | суммарный пиковый API-path `~53,885 RPS` |
-| Fan-out / Projector         |                           `user_updates peak ~226,944 events/s` |      48 vCPU |       96 ГБ |        0.5 ТБ SSD |         5 Гбит/с | fan-out на всех получателей              |
-| PostgreSQL                  |                        `users`, `user_sessions`, `secret_chats` |      24 vCPU |      192 ГБ |       6.0 ТБ NVMe |         3 Гбит/с | `1 primary + 2 standby`                  |
-| Citus coordinator           |                                      distributed SQL / metadata |      20 vCPU |      256 ГБ |      7.68 ТБ NVMe |         2 Гбит/с | `1 active + 1 standby`                   |
-| Citus workers               |                                     chat-centric + user-centric |     144 vCPU |     1728 ГБ |      36.0 ТБ NVMe |        10 Гбит/с | `9 workers = 3 AZ × 3 worker`            |
-| Redis presence              |                                   `online/offline`, `last_seen` |      30 vCPU |      384 ГБ | 11.52 ТБ SSD/NVMe |         3 Гбит/с | `1 primary + 2 replica`                  |
-| Monitoring / Logs / Tracing |                               Prometheus, Loki, Grafana, Jaeger |      24 vCPU |       48 ГБ |        0.6 ТБ SSD |         2 Гбит/с | отдельный observability pool             |
-| **Итого**                   |                                                               — | **610 vCPU** | **3344 ГБ** |      **65.30 ТБ** | **45–50 Гбит/с** | без учёта managed-ресурсов CPU/RAM у S3  |
-#### Сервера
-| Сервис / пул             | Тип                | Конфигурация                                                       | Кол-во | Что размещается                                                                              | Стоимость 1 сервера / сервиса в месяц | Расчёт стоимости                 | Итоговая стоимость в месяц |
-| ------------------------ | ------------------ | ------------------------------------------------------------------ | -----: | -------------------------------------------------------------------------------------------- | ------------------------------------: | -------------------------------- | -------------------------: |
-| Kubernetes control plane | Managed Kubernetes | HA cluster / 3 master-ноды                                         |      1 | control plane                                                                                |                           15,228.00 ₽ | `1 × 15,228.00`                  |                15,228.00 ₽ |
-| Внешний L4-балансировщик | Managed LB         | Продвинутый с резервированием                                      |      1 | внешний VIP                                                                                  |                            3,944.59 ₽ | `1 × 3,944.59`                   |                 3,944.59 ₽ |
-| Edge node group          | Cloud VM           | `16 vCPU / 32 ГБ / 100 ГБ Fast SSD v2`                             |     10 | `ingress-nginx`, `ws-gateway`                                                                |                           20,670.88 ₽ | `16×668.35 + 32×243.04 + 100×22` |               206,708.80 ₽ |
-| Backend node group       | Cloud VM           | `16 vCPU / 32 ГБ / 200 ГБ Fast SSD v2`                             |     10 | `auth`, `api-message`, `updates-api`, `dialogs-api`, `fanout`, `pgbouncer`, `redis-sentinel` |                           22,870.88 ₽ | `16×668.35 + 32×243.04 + 200×22` |               228,708.80 ₽ |
-| Observability node group | Cloud VM           | `8 vCPU / 16 ГБ / 200 ГБ Fast SSD v2`                              |      3 | `prometheus`, `loki`, `grafana`, `jaeger`, `alertmanager`                                    |                           13,635.44 ₽ | `8×668.35 + 16×243.04 + 200×22`  |                40,906.32 ₽ |
-| etcd                     | Cloud VM           | `4 vCPU / 8 ГБ / 50 ГБ Fast SSD v2`                                |      3 | quorum для Patroni                                                                           |                            5,717.72 ₽ | `4×668.35 + 8×243.04 + 50×22`    |                17,153.16 ₽ |
-| PostgreSQL               | Bare Metal         | `EL51-NVMe-SAN: 8 cores / 64 ГБ / 2×2000 ГБ NVMe`                  |      3 | `1 primary + 2 standby`                                                                      |                           28,000.00 ₽ | `3 × 28,000.00`                  |                84,000.00 ₽ |
-| Citus coordinator        | Bare Metal         | `BL19-NVMe: 10 cores / 128 ГБ / 2×1920 ГБ NVMe`                    |      2 | `1 active + 1 standby`                                                                       |                           28,600.00 ₽ | `2 × 28,600.00`                  |                57,200.00 ₽ |
-| Citus workers            | Bare Metal         | `BL25-NVMe: 16 cores / 192 ГБ / 2×1920 ГБ NVMe + 1000 ГБ NVMe M.2` |      9 | chat-centric и user-centric shards                                                           |                           47,709.00 ₽ | `9 × 47,709.00`                  |               429,381.00 ₽ |
-| Redis                    | Bare Metal         | `BL19-NVMe: 10 cores / 128 ГБ / 2×1920 ГБ NVMe`                    |      3 | `1 primary + 2 replica`                                                                      |                           28,600.00 ₽ | `3 × 28,600.00`                  |                85,800.00 ₽ |
-| **Итого**                | —                  | —                                                                  | **42** | —                                                                                            |                                     — | —                                |         **1,169,030.67 ₽** |
 
-#### Kubernetes / контейнеры 
+#### Начальные нормативы для расчёта ресурсов
+| Компонент                 |                                                     Норматив / бенчмарк | Как используется                                                              | Источник |
+| ------------------------- | ----------------------------------------------------------------------: | ----------------------------------------------------------------------------- | -------- |
+| NGINX Ingress             |                   `58 811 SSL TPS` на `24 CPU`; throughput `8.8 Gbit/s` | Расчёт CPU и сети для `ingress-nginx`                                         | [^77]    |
+| NGINX HTTPS               |                                          `10 274 HTTPS CPS` на `24 CPU` | Проверочный ориентир для TLS termination                                      | [^78]    |
+| C++ лёгкое JSON API       |                                                   `5000 RPS / CPU core` | `auth-service`, `updates-api`                                                 | [^85]    |
+| C++ средняя бизнес-логика |                                                    `100 RPS / CPU core` | `api-message-service`, `dialogs-api`, `fanout-projector`, `push-service`      | [^85]    |
+| WebSocket memory          |           `64 KiB` на соединение по умолчанию; `14 KiB` без compression | Расчёт RAM для `ws-gateway`                                                   | [^79]    |
+| Kafka                     |    `821 557 records/s`, `78.3 MB/s` producer throughput без replication | Расчёт Kafka-брокеров для очередей fan-out                                    | [^80]    |
+| Citus                     |                                 `10K–50K INSERT/s` для moderate cluster | Расчёт Citus workers под `user_updates`, `messages`, `dialogs_by_user`        | [^81]    |
+| Redis                     |            random `SET`: `72 144 req/s`; обычный `SET`: `180 180 req/s` | Расчёт Redis presence                                                         | [^82]    |
+| PostgreSQL                |               `pgbench` измеряет TPS на конкретном профиле SQL-нагрузки | Для PostgreSQL честный sizing требует своего `pgbench`; ниже берётся HA-запас | [^83]    |
+| Kubernetes                | CPU limit приводит к throttling; memory limit может привести к OOM kill | Обоснование requests/limits и запаса по узлам                                 | [^84]    |
 
-|Сервис|Поды|CPU req / lim|RAM req / lim|Размещение|
-|---|--:|--:|--:|---|
-|`ingress-nginx`|6|`2 / 4`|`2 / 4 ГБ`|edge pool|
-|`ws-gateway`|40|`1.5 / 3`|`3 / 6 ГБ`|edge pool|
-|`auth-service`|12|`1 / 2`|`1 / 2 ГБ`|backend pool|
-|`api-message-service`|20|`2 / 4`|`4 / 8 ГБ`|backend pool|
-|`updates-api`|8|`1 / 2`|`2 / 4 ГБ`|backend pool|
-|`dialogs-api`|6|`1 / 2`|`2 / 4 ГБ`|backend pool|
-|`fanout-projector`|12|`2 / 4`|`4 / 8 ГБ`|backend pool|
-|`pgbouncer`|3|`0.5 / 1`|`0.5 / 1 ГБ`|backend pool|
-|`redis-sentinel`|3|`0.25 / 0.5`|`0.25 / 0.5 ГБ`|backend pool|
-|`prometheus`|2|`2 / 4`|`8 / 12 ГБ`|observability pool|
-|`alertmanager`|2|`0.5 / 1`|`1 / 2 ГБ`|observability pool|
-|`grafana`|2|`0.5 / 1`|`1 / 2 ГБ`|observability pool|
-|`loki`|2|`2 / 4`|`4 / 8 ГБ`|observability pool|
-|`jaeger`|2|`1 / 2`|`2 / 4 ГБ`|observability pool|
-|**Итого**|**118**|**175.25 / 352.5 vCPU**|**334.25 / 660.5 ГБ**|—|
-#### Суммарная аллокация по пулам Kubernetes 
-|Пул|Ноды|Ресурсы пула|Сумма requests|Сумма limits|Запас по requests|
-|---|--:|---|---|---|---|
-|Edge pool|10|`160 vCPU / 320 ГБ RAM`|`72 vCPU / 132 ГБ`|`144 vCPU / 264 ГБ`|`88 vCPU / 188 ГБ`|
-|Backend pool|10|`160 vCPU / 320 ГБ RAM`|`92.25 vCPU / 170.25 ГБ`|`184.5 vCPU / 340.5 ГБ`|`67.75 vCPU / 149.75 ГБ`|
-|Observability pool|3|`24 vCPU / 48 ГБ RAM`|`12 vCPU / 32 ГБ`|`24 vCPU / 48 ГБ`|`12 vCPU / 16 ГБ`|
-|**Итого**|**23**|**344 vCPU / 688 ГБ RAM**|**176.25 vCPU / 334.25 ГБ**|**352.5 vCPU / 652.5 ГБ**|**167.75 vCPU / 353.75 ГБ**|
+#### Расчёт ресурсов по сервисам
+
+| Сервис                |                                      Пиковая нагрузка | Расчёт                                                                            |                                 Итоговые ресурсы | Источник    |
+| --------------------- | ----------------------------------------------------: | --------------------------------------------------------------------------------- | -----------------------------------------------: | ----------- |
+| `ingress-nginx`       |                    `~53 885 RPS` + TLS/WebSocket вход | `53 885 / (58 811 / 24) × 1.5 ≈ 33 CPU`                                           |              `36 CPU`, `48 GB RAM`, `≥10 Gbit/s` | [^77]       |
+| `ws-gateway`          |      `~1.96 млн WS-соединений`; доставка `23 889 RPS` | CPU: `23 889 / 100 × 1.5 ≈ 359`; RAM: `1.96M × 64 KiB ≈ 125 GiB`                  |            `360 CPU`, `256 GB RAM`, `≥10 Gbit/s` | [^79] [^85] |
+| `auth-service`        |                `16 722 RPS` на session/reconnect-path | `16 722 / 5000 × 1.5 ≈ 6 CPU`                                                     |                 `8 CPU`, `16 GB RAM`, `1 Gbit/s` | [^85]       |
+| `api-message-service` |                             `37 163 SendMessages RPS` | `37 163 / 100 × 1.5 ≈ 558 CPU`                                                    |             `560 CPU`, `128 GB RAM`, `≥5 Gbit/s` | [^85]       |
+| `updates-api`         |                               `16 722 GetUpdates RPS` | `16 722 / 5000 × 1.5 ≈ 6 CPU`                                                     |                 `8 CPU`, `16 GB RAM`, `1 Gbit/s` | [^85]       |
+| `dialogs-api`         |                                          `16 722 RPS` | `16 722 / 100 × 1.5 ≈ 251 CPU`                                                    |              `256 CPU`, `96 GB RAM`, `≥3 Gbit/s` | [^85]       |
+| `fanout-projector`    |                                    `226 944 events/s` | `226 944 / 100 × 1.5 ≈ 3404 CPU`                                                  |           `3408 CPU`, `512 GB RAM`, `≥10 Gbit/s` | [^85]       |
+| `push-service`        |                                  до `23 889 events/s` | `23 889 / 100 × 1.5 ≈ 359 CPU`                                                    |             `360 CPU`, `128 GB RAM`, `≥5 Gbit/s` | [^85]       |
+| `Kafka`               |                                    `226 944 events/s` | Минимум `3 brokers` для RF=3; берём `6 brokers` для запаса и отказа узла          | `6 × 16 CPU`, `6 × 64 GB RAM`, NVMe, `≥25G/node` | [^80]       |
+| `PostgreSQL`          | `user_sessions`: до `16 722 write/s`, `87 330 read/s` | `3 узла мало`; берём 2 HA-группы по `1 primary + 2 standby`                       |             `6 × 32 CPU`, `6 × 128 GB RAM`, NVMe | [^83]       |
+| `Citus`               |            до `226 944 INSERT/s` в hot-path проекциях | `226 944 / 50 000 ≈ 5` capacity blocks; с RF=2 и запасом — `24 workers`           |                    `24 workers + 3 coordinators` | [^81]       |
+| `Redis presence`      |                    `238 889 read/s`, `16 722 write/s` | Нагрузка выше одного безопасного узла; берём `6 nodes` под shard/replica/failover |                    `6 × 16 CPU`, `6 × 64 GB RAM` | [^82]       |
+#### Итоговая таблица серверов
+
+| Пул / сервис             | Размещение            |          Конфигурация одного сервера |                                      Кол-во |    Итого CPU |         Итого RAM | Что размещается                                                                 | Источник    |
+| ------------------------ | --------------------- | -----------------------------------: | ------------------------------------------: | -----------: | ----------------: | ------------------------------------------------------------------------------- | ----------- |
+| Kubernetes control plane | Managed Kubernetes    |                     HA control plane |                                         `1` |            — |                 — | Kubernetes API / scheduler / controller-manager                                 | [^84]       |
+| L4 Load Balancer         | Managed LB            |                    Fault-tolerant LB |                                         `1` |            — |                 — | Внешний VIP, входной L4-контур                                                  | [^77]       |
+| Edge / WS pool           | Bare-metal Kubernetes | `32 CPU / 128 GB RAM / NVMe / 2×25G` |                                        `16` |    `512 CPU` |         `2048 GB` | `ingress-nginx`, `ws-gateway`                                                   | [^77] [^78] |
+| Backend pool             | Bare-metal Kubernetes | `32 CPU / 128 GB RAM / NVMe / 2×25G` |                                       `160` |   `5120 CPU` |        `20480 GB` | `auth`, `api-message`, `updates`, `dialogs`, `fanout`, `push`, `pgbouncer`      | [^85]       |
+| Kafka brokers            | Bare-metal            |  `16 CPU / 64 GB RAM / NVMe / 2×25G` |                                         `6` |     `96 CPU` |          `384 GB` | Очереди `message-created`, `fanout-user-update`, `push-notification`, retry/DLQ | [^80]       |
+| PostgreSQL HA            | Bare-metal            | `32 CPU / 128 GB RAM / NVMe / 2×25G` |                                         `6` |    `192 CPU` |          `768 GB` | `users`, `user_sessions`, `secret_chats`, Patroni HA                            | [^83]       |
+| etcd для Patroni         | VM / small bare-metal |             `4 CPU / 8 GB RAM / SSD` |                                         `3` |     `12 CPU` |           `24 GB` | Quorum для Patroni                                                              | [^83]       |
+| Citus coordinators       | Bare-metal            | `32 CPU / 128 GB RAM / NVMe / 2×25G` |                                         `3` |     `96 CPU` |          `384 GB` | Citus coordinator HA                                                            | [^83]       |
+| Citus workers            | Bare-metal            | `32 CPU / 256 GB RAM / NVMe / 2×25G` |                                        `24` |    `768 CPU` |         `6144 GB` | `messages`, `chat_members`, `user_updates`, `dialogs_by_user`                   | [^81]       |
+| Redis presence           | Bare-metal            |  `16 CPU / 64 GB RAM / NVMe / 2×25G` |                                         `6` |     `96 CPU` |          `384 GB` | `user_presence`, online/offline, last seen                                      | [^82]       |
+| Observability pool       | Bare-metal Kubernetes |  `16 CPU / 64 GB RAM / NVMe / 2×10G` |                                         `6` |     `96 CPU` |          `384 GB` | Prometheus, Loki, Grafana, Jaeger, Alertmanager                                 | [^84]       |
+| **Итого**                | —                     |                                    — | **230 серверов + managed LB/control plane** | **6988 CPU** | **31 000 GB RAM** | —                                                                               | —           |
 
 ---
 ## Список источников
@@ -890,3 +883,21 @@ flowchart TD
 [^75]:[Jaeger Architecture](https://www.jaegertracing.io/docs/latest/architecture/)
 
 [^76]: [Redis Sentinel](https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/)
+
+[^77]: [Blog. Nginx](https://blog.nginx.org/blog/testing-performance-nginx-ingress-controller-kubernetes)
+
+[^78]: [Blog. Nginx. Performance](https://blog.nginx.org/blog/testing-the-performance-of-nginx-and-nginx-plus-web-servers)
+
+[^79]: [Websockets. Docs](https://websockets.readthedocs.io/en/14.0/topics/memory.html)
+
+[^80]: [Benchmarking Apache Kafka](https://engineering.linkedin.com/kafka/benchmarking-apache-kafka-2-million-writes-second-three-cheap-machines/)
+
+[^81]: [CitucData Docs](https://docs.citusdata.com/en/v7.4/performance/scaling_data_ingestion.html) 
+
+[^82]: [Redis Benchmarks](https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/benchmarks/)
+
+[^83]: [PostgreSQL. Benchmarks](https://www.postgresql.org/docs/10/pgbench.html)
+
+[^84]: [Kubernetes Docs](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)
+
+[^85]: [Таблица из задания](https://github.com/init/highload/blob/main/highload_l11_hosting.md#%D0%B1%D0%B0%D0%B7%D0%BE%D0%B2%D1%8B%D0%B9-%D1%80%D0%B0%D1%81%D1%87%D1%91%D1%82-%D0%B0%D0%BF%D0%BF%D0%B0%D1%80%D0%B0%D1%82%D0%BD%D1%8B%D1%85-%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D0%BE%D0%B2)

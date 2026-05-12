@@ -195,11 +195,11 @@
       "bases:Create new base": false
     }
   },
-  "active": "714b1d7d5ba920bb",
+  "active": "6372e62ea36c8440",
   "lastOpenFiles": [
-    "pictures/full-scheme (Copy).svg",
     "pictures/full-scheme.svg",
     "README.md",
+    "pictures/full-scheme (Copy).svg",
     "Untitled.md",
     "archive/database-calculation.md",
     "archive/physical-database-info.md",
@@ -213,7 +213,6 @@
     "pictures/redis-logo.jpeg",
     "pictures/highload-physical-sceme.svg",
     "pictures/logic-database.svg",
-    "pictures/highload-logic-scheme.svg",
     "resources",
     "pictures",
     "archive/README_old_1.md",
