@@ -195,8 +195,12 @@
       "bases:Create new base": false
     }
   },
-  "active": "6372e62ea36c8440",
+  "active": "714b1d7d5ba920bb",
   "lastOpenFiles": [
+    "pictures/full-scheme-other-color.png",
+    "pictures/full-scheme-other-color.svg",
+    "pictures/full-scheme-.svg",
+    "pictures/full-scheme (Copy 2).svg",
     "pictures/full-scheme.svg",
     "README.md",
     "pictures/full-scheme (Copy).svg",
@@ -210,9 +214,6 @@
     "archive/database-info.md",
     "pictures/citus.png",
     "pictures/postgresql-database-logo.png",
-    "pictures/redis-logo.jpeg",
-    "pictures/highload-physical-sceme.svg",
-    "pictures/logic-database.svg",
     "resources",
     "pictures",
     "archive/README_old_1.md",
