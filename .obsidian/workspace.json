@@ -195,14 +195,14 @@
       "bases:Create new base": false
     }
   },
-  "active": "714b1d7d5ba920bb",
+  "active": "6372e62ea36c8440",
   "lastOpenFiles": [
+    "pictures/full-scheme.svg",
+    "README.md",
     "pictures/full-scheme-other-color.png",
     "pictures/full-scheme-other-color.svg",
     "pictures/full-scheme-.svg",
     "pictures/full-scheme (Copy 2).svg",
-    "pictures/full-scheme.svg",
-    "README.md",
     "pictures/full-scheme (Copy).svg",
     "Untitled.md",
     "archive/database-calculation.md",
@@ -213,7 +213,6 @@
     "resources/database-sql.md",
     "archive/database-info.md",
     "pictures/citus.png",
-    "pictures/postgresql-database-logo.png",
     "resources",
     "pictures",
     "archive/README_old_1.md",
